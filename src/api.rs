@@ -154,6 +154,12 @@ pub fn mmap(addr: u64, len: u64) -> SysResult<u64> {
     Ok(n as u64)
 }
 
+/// Unmap `len` bytes at `addr` (must be page-aligned). Returns 0.
+pub fn munmap(addr: u64, len: u64) -> SysResult<u64> {
+    let n = check(raw(nr::MUNMAP, &args(&[addr, len])))?;
+    Ok(n as u64)
+}
+
 /// Get a String from kernel info buffer.
 pub fn kernel_version() -> SysResult<String> {
     let mut buf = [0u8; 64];
