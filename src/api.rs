@@ -31,6 +31,12 @@ pub mod nr {
     pub const LISTDIR: u64 = 20;
     pub const FORK: u64 = 21;
     pub const EXEC: u64 = 22;
+    pub const PIPE: u64 = 23;
+    pub const DUP: u64 = 24;
+    pub const DUP2: u64 = 25;
+    pub const KILL: u64 = 26;
+    pub const MOUNT: u64 = 27;
+    pub const UMOUNT: u64 = 28;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -173,6 +179,52 @@ pub fn exec(path: &str, argv: &[&str], envp: &[&str]) -> SysResult<()> {
     let _ = (argv, envp);
     
     check(raw(nr::EXEC, &args(&[path_ptr, path_len, 0, 0, 0, 0])))?;
+    Ok(())
+}
+
+/// Create a pipe. Returns (read_fd, write_fd).
+pub fn pipe() -> SysResult<(i64, i64)> {
+    let n = check(raw(nr::PIPE, &args(&[])))?;
+    let read_fd = (n & 0xFFFFFFFF) as i64;
+    let write_fd = ((n >> 32) & 0xFFFFFFFF) as i64;
+    Ok((read_fd, write_fd))
+}
+
+/// Duplicate a file descriptor.
+pub fn dup(fd: i64) -> SysResult<i64> {
+    check(raw(nr::DUP, &args(&[fd as u64])))
+}
+
+/// Duplicate a file descriptor to a specific fd number.
+pub fn dup2(oldfd: i64, newfd: i64) -> SysResult<i64> {
+    check(raw(nr::DUP2, &args(&[oldfd as u64, newfd as u64])))
+}
+
+/// Send a signal to a process.
+pub fn kill(pid: i64, signal: i64) -> SysResult<()> {
+    check(raw(nr::KILL, &args(&[pid as u64, signal as u64])))?;
+    Ok(())
+}
+
+/// Mount a filesystem.
+pub fn mount(source: &str, target: &str, fstype: &str) -> SysResult<()> {
+    let s = source.as_bytes();
+    let t = target.as_bytes();
+    let f = fstype.as_bytes();
+    check(raw(nr::MOUNT, &args(&[
+        s.as_ptr() as u64, s.len() as u64,
+        t.as_ptr() as u64, t.len() as u64,
+        f.as_ptr() as u64, f.len() as u64,
+    ])))?;
+    Ok(())
+}
+
+/// Unmount a filesystem.
+pub fn umount(target: &str) -> SysResult<()> {
+    let t = target.as_bytes();
+    check(raw(nr::UMOUNT, &args(&[
+        t.as_ptr() as u64, t.len() as u64,
+    ])))?;
     Ok(())
 }
 
