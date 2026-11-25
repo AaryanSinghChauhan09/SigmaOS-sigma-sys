@@ -28,6 +28,7 @@ pub mod nr {
     pub const FB_FLUSH: u64 = 17;
     pub const TIME: u64 = 18;
     pub const RAND: u64 = 19;
+    pub const LISTDIR: u64 = 20;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -68,6 +69,18 @@ pub fn open(path: &str, flags: u32) -> SysResult<i64> {
 pub fn close(fd: i64) -> SysResult<()> {
     check(raw(nr::CLOSE, &args(&[fd as u64])))?;
     Ok(())
+}
+
+/// List a directory into `buf` as newline-separated names.
+pub fn listdir(path: &str, buf: &mut [u8]) -> SysResult<usize> {
+    let p = path.as_bytes();
+    let n = check(raw(nr::LISTDIR, &args(&[
+        p.as_ptr() as u64,
+        p.len() as u64,
+        buf.as_mut_ptr() as u64,
+        buf.len() as u64,
+    ])))?;
+    Ok(n as usize)
 }
 
 /// Exit the current process with a status code.
