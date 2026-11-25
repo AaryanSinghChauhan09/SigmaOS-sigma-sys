@@ -29,6 +29,8 @@ pub mod nr {
     pub const TIME: u64 = 18;
     pub const RAND: u64 = 19;
     pub const LISTDIR: u64 = 20;
+    pub const FORK: u64 = 21;
+    pub const EXEC: u64 = 22;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -150,6 +152,28 @@ pub fn mmap(addr: u64, len: u64) -> SysResult<u64> {
 pub fn munmap(addr: u64, len: u64) -> SysResult<u64> {
     let n = check(raw(nr::MUNMAP, &args(&[addr, len])))?;
     Ok(n as u64)
+}
+
+/// Fork current process. Returns child pid in parent, 0 in child.
+pub fn fork() -> SysResult<i64> {
+    check(raw(nr::FORK, &args(&[])))
+}
+
+/// Execute a new program. `path` is the executable path,
+/// `argv` is argument vector (null-terminated strings),
+/// `envp` is environment vector. Does not return on success.
+pub fn exec(path: &str, argv: &[&str], envp: &[&str]) -> SysResult<()> {
+    // For simplicity, concatenate argv and envp into buffers
+    // Full implementation would construct proper pointer arrays
+    let path_bytes = path.as_bytes();
+    let path_ptr = path_bytes.as_ptr() as u64;
+    let path_len = path_bytes.len() as u64;
+    
+    // Stub: actual exec needs proper argv/envp encoding
+    let _ = (argv, envp);
+    
+    check(raw(nr::EXEC, &args(&[path_ptr, path_len, 0, 0, 0, 0])))?;
+    Ok(())
 }
 
 /// Get a String from kernel info buffer.
