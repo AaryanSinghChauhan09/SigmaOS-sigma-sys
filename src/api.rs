@@ -92,25 +92,17 @@ pub fn exit(code: i32) -> ! {
     }
 }
 
-/// Spawn a program by path with argv. Returns child pid.
-pub fn spawn(path: &str, argv: &[&str]) -> SysResult<i64> {
-    let path_ptr = path.as_bytes().as_ptr() as u64;
-    // argv marshaling: kernel expects a pointer to a pointer array;
-    // for the ABI v1 we pass a packed buffer: count, then offsets.
-    // Simplified: pass argv count and a contiguous blob.
-    let mut blob = Vec::new();
-    blob.extend_from_slice(&(argv.len() as u64).to_le_bytes());
-    for a in argv {
-        blob.extend_from_slice(&(a.len() as u64).to_le_bytes());
-        blob.extend_from_slice(a.as_bytes());
-    }
-    let blob_ptr = blob.as_ptr() as u64;
-    check(raw(nr::SPAWN, &args(&[path_ptr, blob_ptr, blob.len() as u64])))
+/// Spawn a new process from an ELF file in the VFS.
+/// `path` is the file path bytes (e.g. b"/child"). Returns the child pid.
+pub fn spawn(path: &[u8]) -> SysResult<u64> {
+    let ptr = path.as_ptr() as u64;
+    let n = check(raw(nr::SPAWN, &args(&[ptr, path.len() as u64, 0])))?;
+    Ok(n as u64)
 }
 
-/// Wait for a child pid; returns exit status.
-pub fn wait(pid: i64) -> SysResult<i64> {
-    check(raw(nr::WAIT, &args(&[pid as u64])))
+/// Wait for `pid` to exit; returns its exit status.
+pub fn wait(pid: u64) -> SysResult<i64> {
+    check(raw(nr::WAIT, &args(&[pid, 0, 0])))
 }
 
 /// Current process id.
