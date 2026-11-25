@@ -138,6 +138,22 @@ pub fn rand_bytes(buf: &mut [u8]) -> SysResult<usize> {
     Ok(n as usize)
 }
 
+/// Query or adjust the program break. `addr == 0` returns the
+/// current break; otherwise grows (or shrinks) to `addr`.
+/// Returns the resulting break address.
+pub fn brk(addr: u64) -> SysResult<u64> {
+    let n = check(raw(nr::BRK, &args(&[addr])))?;
+    Ok(n as u64)
+}
+
+/// Map `len` bytes of anonymous memory. `addr == 0` lets the kernel
+/// pick; otherwise `addr` must be page-aligned. Returns the mapping
+/// base address.
+pub fn mmap(addr: u64, len: u64) -> SysResult<u64> {
+    let n = check(raw(nr::MMAP, &args(&[addr, len])))?;
+    Ok(n as u64)
+}
+
 /// Get a String from kernel info buffer.
 pub fn kernel_version() -> SysResult<String> {
     let mut buf = [0u8; 64];
