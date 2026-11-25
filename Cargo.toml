@@ -1,0 +1,15 @@
+[package]
+name = "sigmaos-sigma-sys"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "SigmaOS userspace syscall shim — safe wrappers over the kernel ABI"
+
+[lib]
+name = "sigma_sys"
+path = "src/lib.rs"
+
+[dependencies]
+
+[features]
+default = []

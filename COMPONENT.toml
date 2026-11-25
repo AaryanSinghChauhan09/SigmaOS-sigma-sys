@@ -1,0 +1,8 @@
+[component]
+name = "sigmaos-sigma-sys"
+version = "0.1.0"
+description = "Userspace syscall shim standardizing memory, IPC, and I/O across SigmaOS components"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+sigmaos-sigma-kernel = "0.1"
