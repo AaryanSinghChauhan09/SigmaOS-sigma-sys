@@ -13,3 +13,4 @@ path = "src/lib.rs"
 
 [features]
 default = []
+x86_64 = []
