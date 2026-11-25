@@ -33,9 +33,7 @@ static mut ACTIVE: Option<&'static dyn Syscall> = None;
 #[allow(unsafe_code)]
 pub fn register(sys: &'static dyn Syscall) {
     unsafe {
-        if ACTIVE.is_none() {
-            ACTIVE = Some(sys);
-        }
+        ACTIVE = Some(sys);
     }
 }
 

@@ -3,8 +3,6 @@
 use crate::errno::{check, SysResult};
 use crate::raw;
 use alloc::string::String;
-use alloc::boxed::Box;
-use alloc::vec::Vec;
 
 /// Syscall numbers — must match the kernel ABI exactly.
 pub mod nr {
@@ -239,6 +237,7 @@ pub fn kernel_version() -> SysResult<String> {
 mod tests {
     use super::*;
     use crate::{register, Syscall};
+    use alloc::boxed::Box;
     use alloc::vec::Vec;
     use alloc::sync::Arc;
     use std::sync::{Mutex, Once};
