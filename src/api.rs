@@ -246,7 +246,7 @@ pub fn meminfo() -> SysResult<(u64, u64)> {
 
 /// Process table snapshot: (pid, flags, exit_code) per slot.
 /// flags: bit0 exited, bit1 sleeping, bit2 reaped. pid==0 = unused.
-pub const NPROC_SLOTS: usize = 4;
+pub const NPROC_SLOTS: usize = 8;
 pub fn procinfo() -> SysResult<[(u64, u64, u64); NPROC_SLOTS]> {
     let mut buf = [0u64; NPROC_SLOTS * 3];
     let ptr = buf.as_mut_ptr() as u64;
