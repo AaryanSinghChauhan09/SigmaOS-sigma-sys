@@ -83,6 +83,42 @@ pub fn close(fd: i64) -> SysResult<()> {
     Ok(())
 }
 
+/// File metadata returned by [`stat`]. `mode` uses Linux-ish bits
+/// (0o040755 dir / 0o100644 file); `size` is bytes (0 for dirs).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileStat {
+    pub mode: u64,
+    pub size: u64,
+}
+
+impl FileStat {
+    pub fn is_dir(&self) -> bool {
+        self.mode & 0o170000 == 0o040000
+    }
+}
+
+/// Stat a path in the VFS.
+pub fn stat(path: &str) -> SysResult<FileStat> {
+    let c = path.as_bytes();
+    let mut buf = [0u8; 16];
+    let n = check(raw(
+        nr::STAT,
+        &args(&[
+            c.as_ptr() as u64,
+            c.len() as u64,
+            buf.as_mut_ptr() as u64,
+            buf.len() as u64,
+        ]),
+    ))?;
+    if n < 16 {
+        return Err(-22); // EINVAL — truncated stat buffer
+    }
+    Ok(FileStat {
+        mode: u64::from_le_bytes(buf[0..8].try_into().unwrap()),
+        size: u64::from_le_bytes(buf[8..16].try_into().unwrap()),
+    })
+}
+
 /// Create a directory in the VFS (parents must exist).
 pub fn mkdir(path: &str) -> SysResult<()> {
     let c = path.as_bytes();
