@@ -36,6 +36,7 @@ pub mod nr {
     pub const MOUNT: u64 = 27;
     pub const UMOUNT: u64 = 28;
     pub const MEMINFO: u64 = 29;
+    pub const PROCINFO: u64 = 30;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -134,6 +135,20 @@ pub fn meminfo() -> SysResult<(u64, u64)> {
     let ptr = buf.as_mut_ptr() as u64;
     check(raw(nr::MEMINFO, &args(&[ptr, 16])))?;
     Ok((buf[0], buf[1]))
+}
+
+/// Process table snapshot: (pid, flags, exit_code) per slot.
+/// flags: bit0 exited, bit1 sleeping, bit2 reaped. pid==0 = unused.
+pub const NPROC_SLOTS: usize = 4;
+pub fn procinfo() -> SysResult<[(u64, u64, u64); NPROC_SLOTS]> {
+    let mut buf = [0u64; NPROC_SLOTS * 3];
+    let ptr = buf.as_mut_ptr() as u64;
+    check(raw(nr::PROCINFO, &args(&[ptr, (buf.len() * 8) as u64])))?;
+    let mut out = [(0u64, 0u64, 0u64); NPROC_SLOTS];
+    for i in 0..NPROC_SLOTS {
+        out[i] = (buf[i * 3], buf[i * 3 + 1], buf[i * 3 + 2]);
+    }
+    Ok(out)
 }
 
 /// Current time in seconds since boot.
