@@ -199,12 +199,15 @@ pub fn spawn(path: &[u8]) -> SysResult<u64> {
 /// (inherited, writable) fd — the `> file` mechanism. 0 = console.
 /// `stdin_fd` >= 3 feeds the child's fd 0 reads from that fd —
 /// the `< file` mechanism. 0 = console.
+/// `stderr_fd` >= 3 sends the child's fd 2 writes there; 0 falls
+/// back to stdout_fd. The `2> file` mechanism.
 pub fn spawn_args(
     path: &[u8],
     argv: &[&[u8]],
     envp: &[&[u8]],
     stdout_fd: u64,
     stdin_fd: u64,
+    stderr_fd: u64,
 ) -> SysResult<u64> {
     let mut desc = Vec::with_capacity(16 + (argv.len() + envp.len()) * 16);
     desc.extend_from_slice(&(argv.len() as u64).to_le_bytes());
@@ -225,6 +228,7 @@ pub fn spawn_args(
             desc.as_ptr() as u64,
             stdout_fd,
             stdin_fd,
+            stderr_fd,
         ]),
     ))?;
     Ok(n as u64)
