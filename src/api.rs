@@ -195,7 +195,9 @@ pub fn spawn(path: &[u8]) -> SysResult<u64> {
 /// {argc, argv[], NULL, envp[], NULL} stack image (argv[0] = path).
 /// Descriptor ABI: {u64 argc, argc x {ptr,len}, u64 envc,
 /// envc x {ptr,len}}.
-pub fn spawn_args(path: &[u8], argv: &[&[u8]], envp: &[&[u8]]) -> SysResult<u64> {
+/// `stdout_fd` >= 3 redirects the child's fd 1/2 writes to that
+/// (inherited, writable) fd — the `> file` mechanism. 0 = console.
+pub fn spawn_args(path: &[u8], argv: &[&[u8]], envp: &[&[u8]], stdout_fd: u64) -> SysResult<u64> {
     let mut desc = Vec::with_capacity(16 + (argv.len() + envp.len()) * 16);
     desc.extend_from_slice(&(argv.len() as u64).to_le_bytes());
     for a in argv {
@@ -213,6 +215,7 @@ pub fn spawn_args(path: &[u8], argv: &[&[u8]], envp: &[&[u8]]) -> SysResult<u64>
             path.as_ptr() as u64,
             path.len() as u64,
             desc.as_ptr() as u64,
+            stdout_fd,
         ]),
     ))?;
     Ok(n as u64)
