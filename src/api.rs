@@ -112,18 +112,29 @@ pub fn spawn(path: &[u8]) -> SysResult<u64> {
     Ok(n as u64)
 }
 
-/// Spawn `path` with `args` — kernel builds a real argv on the child
-/// stack (argv[0] = path). args_ptr ABI: {u64 argc, argc x {ptr,len}}.
-pub fn spawn_args(path: &[u8], argv: &[&[u8]]) -> SysResult<u64> {
-    let mut desc = Vec::with_capacity(8 + argv.len() * 16);
+/// Spawn `path` with `argv` and `envp` — the kernel builds a real
+/// {argc, argv[], NULL, envp[], NULL} stack image (argv[0] = path).
+/// Descriptor ABI: {u64 argc, argc x {ptr,len}, u64 envc,
+/// envc x {ptr,len}}.
+pub fn spawn_args(path: &[u8], argv: &[&[u8]], envp: &[&[u8]]) -> SysResult<u64> {
+    let mut desc = Vec::with_capacity(16 + (argv.len() + envp.len()) * 16);
     desc.extend_from_slice(&(argv.len() as u64).to_le_bytes());
     for a in argv {
         desc.extend_from_slice(&(a.as_ptr() as u64).to_le_bytes());
         desc.extend_from_slice(&(a.len() as u64).to_le_bytes());
     }
+    desc.extend_from_slice(&(envp.len() as u64).to_le_bytes());
+    for e in envp {
+        desc.extend_from_slice(&(e.as_ptr() as u64).to_le_bytes());
+        desc.extend_from_slice(&(e.len() as u64).to_le_bytes());
+    }
     let n = check(raw(
         nr::SPAWN,
-        &args(&[path.as_ptr() as u64, path.len() as u64, desc.as_ptr() as u64]),
+        &args(&[
+            path.as_ptr() as u64,
+            path.len() as u64,
+            desc.as_ptr() as u64,
+        ]),
     ))?;
     Ok(n as u64)
 }
