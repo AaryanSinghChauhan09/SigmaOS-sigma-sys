@@ -35,6 +35,7 @@ pub mod nr {
     pub const KILL: u64 = 26;
     pub const MOUNT: u64 = 27;
     pub const UMOUNT: u64 = 28;
+    pub const MEMINFO: u64 = 29;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -125,6 +126,14 @@ pub fn kernel_info(buf: &mut [u8]) -> SysResult<usize> {
     let ptr = buf.as_mut_ptr() as u64;
     let n = check(raw(nr::KERNEL_INFO, &args(&[ptr, buf.len() as u64])))?;
     Ok(n as usize)
+}
+
+/// Frame allocator stats: (total_frames, free_frames).
+pub fn meminfo() -> SysResult<(u64, u64)> {
+    let mut buf = [0u64; 2];
+    let ptr = buf.as_mut_ptr() as u64;
+    check(raw(nr::MEMINFO, &args(&[ptr, 16])))?;
+    Ok((buf[0], buf[1]))
 }
 
 /// Current time in seconds since boot.
