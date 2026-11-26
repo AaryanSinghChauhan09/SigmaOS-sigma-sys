@@ -38,6 +38,9 @@ pub mod nr {
     pub const UMOUNT: u64 = 28;
     pub const MEMINFO: u64 = 29;
     pub const PROCINFO: u64 = 30;
+    pub const MKDIR: u64 = 31;
+    pub const UNLINK: u64 = 32;
+    pub const RMDIR: u64 = 33;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -77,6 +80,27 @@ pub fn open(path: &str, flags: u32) -> SysResult<i64> {
 /// Close an fd.
 pub fn close(fd: i64) -> SysResult<()> {
     check(raw(nr::CLOSE, &args(&[fd as u64])))?;
+    Ok(())
+}
+
+/// Create a directory in the VFS (parents must exist).
+pub fn mkdir(path: &str) -> SysResult<()> {
+    let c = path.as_bytes();
+    check(raw(nr::MKDIR, &args(&[c.as_ptr() as u64, c.len() as u64])))?;
+    Ok(())
+}
+
+/// Remove a file from the VFS.
+pub fn unlink(path: &str) -> SysResult<()> {
+    let c = path.as_bytes();
+    check(raw(nr::UNLINK, &args(&[c.as_ptr() as u64, c.len() as u64])))?;
+    Ok(())
+}
+
+/// Remove an empty directory from the VFS.
+pub fn remove_dir(path: &str) -> SysResult<()> {
+    let c = path.as_bytes();
+    check(raw(nr::RMDIR, &args(&[c.as_ptr() as u64, c.len() as u64])))?;
     Ok(())
 }
 
