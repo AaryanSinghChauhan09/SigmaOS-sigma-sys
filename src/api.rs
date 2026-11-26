@@ -80,12 +80,15 @@ pub fn close(fd: i64) -> SysResult<()> {
 /// List a directory into `buf` as newline-separated names.
 pub fn listdir(path: &str, buf: &mut [u8]) -> SysResult<usize> {
     let p = path.as_bytes();
-    let n = check(raw(nr::LISTDIR, &args(&[
-        p.as_ptr() as u64,
-        p.len() as u64,
-        buf.as_mut_ptr() as u64,
-        buf.len() as u64,
-    ])))?;
+    let n = check(raw(
+        nr::LISTDIR,
+        &args(&[
+            p.as_ptr() as u64,
+            p.len() as u64,
+            buf.as_mut_ptr() as u64,
+            buf.len() as u64,
+        ]),
+    ))?;
     Ok(n as usize)
 }
 
@@ -172,10 +175,10 @@ pub fn exec(path: &str, argv: &[&str], envp: &[&str]) -> SysResult<()> {
     let path_bytes = path.as_bytes();
     let path_ptr = path_bytes.as_ptr() as u64;
     let path_len = path_bytes.len() as u64;
-    
+
     // Stub: actual exec needs proper argv/envp encoding
     let _ = (argv, envp);
-    
+
     check(raw(nr::EXEC, &args(&[path_ptr, path_len, 0, 0, 0, 0])))?;
     Ok(())
 }
@@ -209,20 +212,24 @@ pub fn mount(source: &str, target: &str, fstype: &str) -> SysResult<()> {
     let s = source.as_bytes();
     let t = target.as_bytes();
     let f = fstype.as_bytes();
-    check(raw(nr::MOUNT, &args(&[
-        s.as_ptr() as u64, s.len() as u64,
-        t.as_ptr() as u64, t.len() as u64,
-        f.as_ptr() as u64, f.len() as u64,
-    ])))?;
+    check(raw(
+        nr::MOUNT,
+        &args(&[
+            s.as_ptr() as u64,
+            s.len() as u64,
+            t.as_ptr() as u64,
+            t.len() as u64,
+            f.as_ptr() as u64,
+            f.len() as u64,
+        ]),
+    ))?;
     Ok(())
 }
 
 /// Unmount a filesystem.
 pub fn umount(target: &str) -> SysResult<()> {
     let t = target.as_bytes();
-    check(raw(nr::UMOUNT, &args(&[
-        t.as_ptr() as u64, t.len() as u64,
-    ])))?;
+    check(raw(nr::UMOUNT, &args(&[t.as_ptr() as u64, t.len() as u64])))?;
     Ok(())
 }
 
@@ -238,8 +245,8 @@ mod tests {
     use super::*;
     use crate::{register, Syscall};
     use alloc::boxed::Box;
-    use alloc::vec::Vec;
     use alloc::sync::Arc;
+    use alloc::vec::Vec;
     use std::sync::{Mutex, Once};
 
     type Log = Arc<Mutex<Vec<(u64, [u64; 6])>>>;
