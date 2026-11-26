@@ -41,6 +41,8 @@ pub mod nr {
     pub const MKDIR: u64 = 31;
     pub const UNLINK: u64 = 32;
     pub const RMDIR: u64 = 33;
+    pub const CHDIR: u64 = 34;
+    pub const GETCWD: u64 = 35;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -138,6 +140,23 @@ pub fn remove_dir(path: &str) -> SysResult<()> {
     let c = path.as_bytes();
     check(raw(nr::RMDIR, &args(&[c.as_ptr() as u64, c.len() as u64])))?;
     Ok(())
+}
+
+/// Change the calling process's working directory (absolute path that
+/// exists and is a directory).
+pub fn chdir(path: &str) -> SysResult<()> {
+    let c = path.as_bytes();
+    check(raw(nr::CHDIR, &args(&[c.as_ptr() as u64, c.len() as u64])))?;
+    Ok(())
+}
+
+/// Read the calling process's working directory into `buf`.
+pub fn getcwd(buf: &mut [u8]) -> SysResult<usize> {
+    let n = check(raw(
+        nr::GETCWD,
+        &args(&[buf.as_mut_ptr() as u64, buf.len() as u64]),
+    ))?;
+    Ok(n as usize)
 }
 
 /// List a directory into `buf` as newline-separated names.
