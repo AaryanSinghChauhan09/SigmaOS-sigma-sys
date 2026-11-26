@@ -3,6 +3,7 @@
 use crate::errno::{check, SysResult};
 use crate::raw;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 /// Syscall numbers — must match the kernel ABI exactly.
 pub mod nr {
@@ -108,6 +109,22 @@ pub fn exit(code: i32) -> ! {
 pub fn spawn(path: &[u8]) -> SysResult<u64> {
     let ptr = path.as_ptr() as u64;
     let n = check(raw(nr::SPAWN, &args(&[ptr, path.len() as u64, 0])))?;
+    Ok(n as u64)
+}
+
+/// Spawn `path` with `args` — kernel builds a real argv on the child
+/// stack (argv[0] = path). args_ptr ABI: {u64 argc, argc x {ptr,len}}.
+pub fn spawn_args(path: &[u8], argv: &[&[u8]]) -> SysResult<u64> {
+    let mut desc = Vec::with_capacity(8 + argv.len() * 16);
+    desc.extend_from_slice(&(argv.len() as u64).to_le_bytes());
+    for a in argv {
+        desc.extend_from_slice(&(a.as_ptr() as u64).to_le_bytes());
+        desc.extend_from_slice(&(a.len() as u64).to_le_bytes());
+    }
+    let n = check(raw(
+        nr::SPAWN,
+        &args(&[path.as_ptr() as u64, path.len() as u64, desc.as_ptr() as u64]),
+    ))?;
     Ok(n as u64)
 }
 
