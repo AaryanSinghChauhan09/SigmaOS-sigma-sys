@@ -239,6 +239,12 @@ pub fn wait(pid: u64) -> SysResult<i64> {
     check(raw(nr::WAIT, &args(&[pid, 0, 0])))
 }
 
+/// Wait for ANY child to exit (POSIX `wait`/`waitpid(-1)`); returns
+/// the exit status of whichever child finished first.
+pub fn wait_any() -> SysResult<i64> {
+    check(raw(nr::WAIT, &args(&[u64::MAX, 0, 0])))
+}
+
 /// Current process id.
 pub fn getpid() -> SysResult<i64> {
     check(raw(nr::GETPID, &args(&[])))
