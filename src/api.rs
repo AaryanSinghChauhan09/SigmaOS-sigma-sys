@@ -43,6 +43,7 @@ pub mod nr {
     pub const RMDIR: u64 = 33;
     pub const CHDIR: u64 = 34;
     pub const GETCWD: u64 = 35;
+    pub const DMESG: u64 = 36;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -278,6 +279,22 @@ pub fn procinfo() -> SysResult<[(u64, u64, u64); NPROC_SLOTS]> {
         out[i] = (buf[i * 3], buf[i * 3 + 1], buf[i * 3 + 2]);
     }
     Ok(out)
+}
+
+/// Kernel ring-buffer size exposed by DMESG.
+pub const DMESG_CAP: usize = 16384;
+
+/// Read the kernel log ring buffer (dmesg). Returns up to `buf.len()`
+/// of the most recent bytes.
+pub fn dmesg(buf: &mut [u8]) -> SysResult<usize> {
+    if buf.is_empty() {
+        return Ok(0);
+    }
+    let n = check(raw(
+        nr::DMESG,
+        &args(&[buf.as_mut_ptr() as u64, buf.len() as u64]),
+    ))?;
+    Ok(n as usize)
 }
 
 /// Current time in seconds since boot.
