@@ -44,6 +44,7 @@ pub mod nr {
     pub const CHDIR: u64 = 34;
     pub const GETCWD: u64 = 35;
     pub const DMESG: u64 = 36;
+    pub const STATFS: u64 = 37;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -295,6 +296,29 @@ pub fn dmesg(buf: &mut [u8]) -> SysResult<usize> {
         &args(&[buf.as_mut_ptr() as u64, buf.len() as u64]),
     ))?;
     Ok(n as usize)
+}
+
+/// Filesystem kind codes returned by statfs (kernel FsKind).
+pub const FS_INITRAMFS: u64 = 1;
+pub const FS_FAT32: u64 = 2;
+pub const FS_OTHER: u64 = 3;
+
+/// statfs(2) analogue: filesystem stats for `path`.
+/// Returns (kind, node_count) of the mount covering `path`.
+pub fn statfs(path: &str) -> SysResult<(u64, u64)> {
+    let p = path.as_bytes();
+    let mut buf = [0u64; 2];
+    let n = check(raw(
+        nr::STATFS,
+        &args(&[
+            p.as_ptr() as u64,
+            p.len() as u64,
+            buf.as_mut_ptr() as u64,
+            16,
+        ]),
+    ))?;
+    debug_assert_eq!(n, 0);
+    Ok((buf[0], buf[1]))
 }
 
 /// Current time in seconds since boot.
