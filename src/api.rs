@@ -313,20 +313,36 @@ pub fn fork() -> SysResult<i64> {
     check(raw(nr::FORK, &args(&[])))
 }
 
-/// Execute a new program. `path` is the executable path,
-/// `argv` is argument vector (null-terminated strings),
-/// `envp` is environment vector. Does not return on success.
+/// Execute a new program, replacing the current process image.
+/// `path` is the executable path, `argv` the argument vector
+/// (excluding argv[0] — the kernel prepends `path`), `envp` the
+/// environment. Does not return on success; `Err` on failure.
 pub fn exec(path: &str, argv: &[&str], envp: &[&str]) -> SysResult<()> {
-    // For simplicity, concatenate argv and envp into buffers
-    // Full implementation would construct proper pointer arrays
     let path_bytes = path.as_bytes();
-    let path_ptr = path_bytes.as_ptr() as u64;
-    let path_len = path_bytes.len() as u64;
-
-    // Stub: actual exec needs proper argv/envp encoding
-    let _ = (argv, envp);
-
-    check(raw(nr::EXEC, &args(&[path_ptr, path_len, 0, 0, 0, 0])))?;
+    // Same packed descriptor ABI as spawn_args:
+    // {u64 argc, argc x {ptr,len}, u64 envc, envc x {ptr,len}}.
+    let mut desc = Vec::with_capacity(16 + (argv.len() + envp.len()) * 16);
+    desc.extend_from_slice(&(argv.len() as u64).to_le_bytes());
+    for a in argv {
+        desc.extend_from_slice(&(a.as_ptr() as u64).to_le_bytes());
+        desc.extend_from_slice(&(a.len() as u64).to_le_bytes());
+    }
+    desc.extend_from_slice(&(envp.len() as u64).to_le_bytes());
+    for e in envp {
+        desc.extend_from_slice(&(e.as_ptr() as u64).to_le_bytes());
+        desc.extend_from_slice(&(e.len() as u64).to_le_bytes());
+    }
+    check(raw(
+        nr::EXEC,
+        &args(&[
+            path_bytes.as_ptr() as u64,
+            path_bytes.len() as u64,
+            desc.as_ptr() as u64,
+            0,
+            0,
+            0,
+        ]),
+    ))?;
     Ok(())
 }
 
