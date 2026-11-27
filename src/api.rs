@@ -45,6 +45,7 @@ pub mod nr {
     pub const GETCWD: u64 = 35;
     pub const DMESG: u64 = 36;
     pub const STATFS: u64 = 37;
+    pub const MOUNTLIST: u64 = 38;
 }
 
 fn args(a: &[u64]) -> [u64; 6] {
@@ -296,6 +297,41 @@ pub fn dmesg(buf: &mut [u8]) -> SysResult<usize> {
         &args(&[buf.as_mut_ptr() as u64, buf.len() as u64]),
     ))?;
     Ok(n as usize)
+}
+
+/// One entry from the kernel mount table (MOUNTLIST record).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MountInfo {
+    pub kind: u64,
+    pub dev: u64,
+    pub path: String,
+}
+
+/// List registered mounts (the `/proc/mounts` analogue). Kernel
+/// record layout: u64 count, then {u64 kind, u64 dev, u8 path[64]}.
+pub fn mountlist() -> SysResult<Vec<MountInfo>> {
+    const REC: usize = 80;
+    const CAP: usize = 16;
+    let mut buf = [0u8; 8 + CAP * REC];
+    let n = check(raw(
+        nr::MOUNTLIST,
+        &args(&[buf.as_mut_ptr() as u64, buf.len() as u64]),
+    ))?;
+    debug_assert_eq!(n, 0);
+    let count = u64::from_le_bytes(buf[0..8].try_into().unwrap()) as usize;
+    let mut out = Vec::with_capacity(count.min(CAP));
+    for i in 0..count.min(CAP) {
+        let r = &buf[8 + i * REC..8 + (i + 1) * REC];
+        let kind = u64::from_le_bytes(r[0..8].try_into().unwrap());
+        let dev = u64::from_le_bytes(r[8..16].try_into().unwrap());
+        let end = r[16..].iter().position(|&b| b == 0).unwrap_or(64);
+        out.push(MountInfo {
+            kind,
+            dev,
+            path: String::from_utf8_lossy(&r[16..16 + end]).into_owned(),
+        });
+    }
+    Ok(out)
 }
 
 /// Filesystem kind codes returned by statfs (kernel FsKind).
